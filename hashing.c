@@ -2,46 +2,48 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LEN 300000
-#define R 33
-#define M 5381
+#define N 300000
 
-int table[MAX_LEN];
+typedef __uint64_t u64;
+typedef __uint128_t u128;
 
-void build_table(char* s) {
+static const u64 M = 207790001816285477;
+static const u64 R = 811;
+
+u128 ppow[N];
+u128 phash[N + 1];
+
+void init_power_table(void) {
+    ppow[0] = 1;
+    for(int i = 1; i < N; i++) {
+        ppow[i] = ppow[i - 1] * R % M;
+    }
+}
+
+void init_hash_table(const char* s) {
     int n = strlen(s);
-    table[0] = 5381;
     for (int i = 0; i < n; i++) {
-        int prev = i > 0 ? table[i - 1] : 0;
-        table[i] = (prev * R + s[i]) % M;
+        phash[i + 1] = (phash[i] * R % M + (s[i] - 'a' + 1)) % M;
     }
-}
-
-// Computes n to the power of p modulo m
-int modpow(int n, int p, int m) {
-    if (m == 1) return 0;
-    int r = 1;
-    for (int i = 0; i < p; i++) {
-        r = (r * n) % m;
-    }
-    return r;
-}
-
-int query_table(int l, int r) {
-    return (table[r] % M) - modpow(R, (r - l + 1), M) * (table[l - 1] % M);
 }
 
 int main(void) {
-    char s[MAX_LEN];
-    int q;
-    int l, r;
+
+    char s[N + 1];
+    u64 q;
+    u64 l, r;
+
+    init_power_table();
+
     scanf("%s", s);
-    build_table(s);
-    scanf("%d", &q);
+    init_hash_table(s);
+
+    scanf("%lu", &q);
     for (int i = 0; i < q; i++) {
-        scanf("%d %d", &l, &r);
-        int result = query_table(l, r);
-        printf("%d\n", result);
+        scanf("%lu %lu", &l, &r);
+        u128 left = phash[l] * ppow[r - l] % M;
+        u128 right = phash[r] % M;
+        u128 hash = (M + right - left) % M;
+        printf("%llu\n", hash);
     }
-    return 0;
 }
